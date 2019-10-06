@@ -134,6 +134,28 @@ class FrameVis:
 		return output_image
 
 	@staticmethod
+	def nframes_from_interval(source, interval):
+		"""
+		Calculates the number of frames available in a video file for a given capture interval
+
+		Parameters:
+			source (str): filepath to source video file
+			interval (float): capture frame every i seconds
+
+		Returns:
+			number of frames per time interval (int)
+		"""
+		video = cv2.VideoCapture(source)  # open video file
+		if not video.isOpened():
+			raise FileNotFoundError("Source Video Not Found")
+
+		frame_count = video.get(cv2.CAP_PROP_FRAME_COUNT)  # total number of frames
+		fps = video.get(cv2.CAP_PROP_FPS)  # framerate of the video
+		duration = frame_count / fps  # duration of the video, in seconds
+
+		return int(round(duration / interval))  # number of frames per interval
+
+	@staticmethod
 	def progress_bar(percent):
 		"""Prints a progress bar to the console based on the input percentage (float)."""
 		term_char = '\r' if percent < 1.0 else '\n'  # rewrite the line unless finished
@@ -148,7 +170,8 @@ def main():
 
 	parser.add_argument("source", help="file path for the video file to be visualized", type=str)
 	parser.add_argument("destination", help="file path output for the final image", type=str)
-	parser.add_argument("-n", "--nframes", help="the number of frames in the visualization", type=int, required=True)
+	parser.add_argument("-n", "--nframes", help="the number of frames in the visualization", type=int)
+	parser.add_argument("-i", "--interval", help="interval between frames for the visualization", type=float)
 	parser.add_argument("-h", "--height", help="the height of each frame, in pixels", type=int, default=FrameVis.default_frame_height)
 	parser.add_argument("-w", "--width", help="the output width of each frame, in pixels", type=int, default=FrameVis.default_frame_width)
 	parser.add_argument("-d", "--direction", help="direction to concatenate frames, horizontal or vertical", type=str, \
@@ -157,6 +180,12 @@ def main():
 	parser.add_argument("--help", action="help", help="show this help message and exit")
 
 	args = parser.parse_args()
+
+	if args.nframes is None:
+		if args.interval is not None:  # calculate nframes from interval
+			args.nframes = FrameVis.nframes_from_interval(args.source, args.interval)
+		else:
+			parser.error("You must provide either an --(n)frames or --(i)nterval argument")
 
 	fv = FrameVis()
 
