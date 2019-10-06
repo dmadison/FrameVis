@@ -39,19 +39,20 @@ class FrameVis:
 	default_concat_size = 1  # size of concatenated frame if automatically calculated, in pixels
 	default_direction = "horizontal"  # left to right
 
-	def visualize(self, source, destination, nframes, height=default_frame_height, width=default_frame_width, \
-		direction=default_direction, quiet=True):
+	def visualize(self, source, nframes, height=default_frame_height, width=default_frame_width, direction=default_direction, quiet=True):
 		"""
 		Reads a video file and outputs an image comprised of n resized frames, spread evenly throughout the file.
 
 		Parameters:
 			source (str): filepath to source video file
-			destination (str): filepath for output image
 			nframes (int): number of frames to process from the video
 			height (int): height of each frame, in pixels
 			width (int): width of each frame, in pixels
 			direction (str): direction to concatenate frames ("horizontal" or "vertical")
 			quiet (bool): suppress console messages
+
+		Returns:
+			visualization image as numpy array
 		"""
 
 		video = cv2.VideoCapture(source)  # open video file
@@ -130,9 +131,7 @@ class FrameVis:
 			if not quiet:
 				FrameVis.progress_bar(finished_frames / nframes)  # print progress bar to the console
 
-		cv2.imwrite(destination, output_image)  # save visualization to file
-		if not quiet:
-			print("Visualization saved to {}".format(destination))
+		return output_image
 
 	@staticmethod
 	def progress_bar(percent):
@@ -160,7 +159,12 @@ def main():
 	args = parser.parse_args()
 
 	fv = FrameVis()
-	fv.visualize(args.source, args.destination, args.nframes, height=args.height, width=args.width, direction=args.direction, quiet=args.quiet)
+
+	output_image = fv.visualize(args.source, args.nframes, height=args.height, width=args.width, direction=args.direction, quiet=args.quiet)
+	cv2.imwrite(args.destination, output_image)  # save visualization to file
+
+	if not args.quiet:
+		print("Visualization saved to {}".format(args.destination))
 
 
 if __name__ == "__main__":
