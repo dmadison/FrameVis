@@ -120,10 +120,13 @@ class FrameVis:
 			if not success:
 				raise IOError("Cannot read from video file (frame {} out of {})".format(int(next_keyframe), video_total_frames))
 
+			image = cv2.resize(image, (width, height))  # resize to output size
+
+			# save to output image
 			if output_image is None:
-				output_image = cv2.resize(image, (width, height))
+				output_image = image
 			else:
-				output_image = concatenate([output_image, cv2.resize(image, (width, height))])  # concatenate horizontally from left -> right
+				output_image = concatenate([output_image, image])  # concatenate horizontally from left -> right
 
 			finished_frames += 1
 			next_keyframe += keyframe_interval  # set next frame capture time, maintaining floats
