@@ -26,6 +26,7 @@
 import cv2
 import numpy as np
 import argparse
+from enum import Enum, auto
 
 
 class FrameVis:
@@ -33,10 +34,16 @@ class FrameVis:
 	Reads a video file and outputs an image comprised of n resized frames, spread evenly throughout the file.
 	"""
 
-	default_frame_height = None  # Auto
-	default_frame_width = 1  # in pixels
+	class Direction(Enum):
+		HORIZONTAL = auto()  # left to right
+		VERTICAL = auto()  # top to bottom
 
-	def visualize(self, source, destination, nframes, height=default_frame_height, width=default_frame_width, quiet=True):
+	default_frame_height = None  # auto, or in pixels
+	default_frame_width = None  # auto, or in pixels
+	default_concat_size = 1  # size of concatenated frame if automatically calculated, in pixels
+	default_direction = Direction.HORIZONTAL
+
+	def visualize(self, source, destination, nframes, height=default_frame_height, width=default_frame_width, direction=default_direction, quiet=True):
 		"""
 		Reads a video file and outputs an image comprised of n resized frames, spread evenly throughout the file.
 
@@ -46,6 +53,7 @@ class FrameVis:
 			nframes (int): number of frames to process from the video
 			height (int): height of each frame, in pixels
 			width (int): width of each frame, in pixels
+			direction (enum): direction to concatenate frames (horizontal or vertical)
 			quiet (bool): suppress console messages
 		"""
 
@@ -61,25 +69,48 @@ class FrameVis:
 			raise ValueError("Requested frame count larger than total available ({})".format(video_total_frames))
 		keyframe_interval = video_total_frames / nframes  # calculate number of frames between captures
 
-		# calculate height and width
-		if height is None:
-			success,image = video.read()  # get first frame
-			if not success:
-				raise IOError("Cannot read from video file")
-			height = image.shape[0]  # save frame height
+		# grab frame for dimension calculations
+		success,image = video.read()  # get first frame
+		if not success:
+			raise IOError("Cannot read from video file")
+
+		# calculate height
+		if height is None:  # auto-calculate
+			if direction is FrameVis.Direction.HORIZONTAL:  # non-concat, use video size
+				height = image.shape[0]  # save frame height
+			else:  # concat, use default value
+				height = FrameVis.default_concat_size
 		elif not isinstance(height, int) or height < 1:
 			raise ValueError("Frame height must be a positive integer")
-
-		if not isinstance(width, int) or width < 1:
+		
+		# calculate width
+		if width is None:  # auto-calculate
+			if direction is FrameVis.Direction.VERTICAL:  # non-concat, use video size
+				width = image.shape[1]  # save frame width
+			else:  # concat, use default value
+				width = FrameVis.default_concat_size
+		elif not isinstance(width, int) or width < 1:
 			raise ValueError("Frame width must be a positive integer")
+
+		# assign direction function and calculate output size
+		if direction is FrameVis.Direction.HORIZONTAL:
+			concatenate = cv2.hconcat
+			output_width = width * nframes
+			output_height = height
+		elif direction is FrameVis.Direction.VERTICAL:
+			concatenate = cv2.vconcat
+			output_width = width
+			output_height = height * nframes
+		else:
+			raise ValueError("Invalid direction specified")
+
+		if not quiet:
+			print("\nVisualizing \"{}\" - {} by {}, from {} frames".format(source, output_width, output_height, nframes))
 
 		# set up for the frame processing loop
 		next_keyframe = keyframe_interval / 2  # frame number for the next frame grab, starting evenly offset from start/end
 		finished_frames = 0  # counter for number of processed frames
 		output_image = None
-
-		if not quiet:
-			print("\nVisualizing \"{}\" - {} by {}, from {} frames".format(source, width * nframes, height, nframes))
 
 		while True:
 			if finished_frames == nframes:
@@ -94,7 +125,7 @@ class FrameVis:
 			if output_image is None:
 				output_image = cv2.resize(image, (width, height))
 			else:
-				output_image = cv2.hconcat([output_image, cv2.resize(image, (width, height))])  # concatenate horizontally from left -> right
+				output_image = concatenate([output_image, cv2.resize(image, (width, height))])  # concatenate horizontally from left -> right
 
 			finished_frames += 1
 			next_keyframe += keyframe_interval  # set next frame capture time, maintaining floats
@@ -124,13 +155,21 @@ def main():
 	parser.add_argument("-n", "--nframes", help="the number of frames in the visualization", type=int, required=True)
 	parser.add_argument("-h", "--height", help="the height of each frame, in pixels", type=int, default=FrameVis.default_frame_height)
 	parser.add_argument("-w", "--width", help="the output width of each frame, in pixels", type=int, default=FrameVis.default_frame_width)
+	parser.add_argument("-d", "--direction", help="direction to concatenate frames, horizontal or vertical", type=str, choices=["horizontal", "vertical"])
 	parser.add_argument("-q", "--quiet", help="mute console outputs", action='store_true', default=False)
 	parser.add_argument("--help", action="help", help="show this help message and exit")
 
 	args = parser.parse_args()
 
+	direction = FrameVis.default_direction
+	if args.direction is not None:
+		if args.direction == "horizontal":
+			direction = FrameVis.Direction.HORIZONTAL
+		elif args.direction == "vertical":
+			direction = FrameVis.Direction.VERTICAL
+
 	fv = FrameVis()
-	fv.visualize(args.source, args.destination, args.nframes, height=args.height, width=args.width, quiet=args.quiet)
+	fv.visualize(args.source, args.destination, args.nframes, height=args.height, width=args.width, direction=direction, quiet=args.quiet)
 
 
 if __name__ == "__main__":
