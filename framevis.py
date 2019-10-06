@@ -36,7 +36,7 @@ class FrameVis:
 	default_frame_height = None  # Auto
 	default_frame_width = 1  # in pixels
 
-	def visualize(self, source, destination, nframes, height=default_frame_height, width=default_frame_width):
+	def visualize(self, source, destination, nframes, height=default_frame_height, width=default_frame_width, quiet=True):
 		"""
 		Reads a video file and outputs an image comprised of n resized frames, spread evenly throughout the file.
 
@@ -46,6 +46,7 @@ class FrameVis:
 			nframes (int): number of frames to process from the video
 			height (int): height of each frame, in pixels
 			width (int): width of each frame, in pixels
+			quiet (bool): suppress console messages
 		"""
 
 		video = cv2.VideoCapture(source)  # open video file
@@ -77,7 +78,8 @@ class FrameVis:
 		finished_frames = 0  # counter for number of processed frames
 		output_image = None
 
-		print("\nVisualizing \"{}\" - {} by {}, from {} frames".format(source, width * nframes, height, nframes))
+		if not quiet:
+			print("\nVisualizing \"{}\" - {} by {}, from {} frames".format(source, width * nframes, height, nframes))
 
 		while True:
 			if finished_frames == nframes:
@@ -97,10 +99,12 @@ class FrameVis:
 			finished_frames += 1
 			next_keyframe += keyframe_interval  # set next frame capture time, maintaining floats
 
-			FrameVis.progress_bar(finished_frames / nframes)  # print progress bar to the console
+			if not quiet:
+				FrameVis.progress_bar(finished_frames / nframes)  # print progress bar to the console
 
 		cv2.imwrite(destination, output_image)  # save visualization to file
-		print("Visualization saved to {}".format(destination))
+		if not quiet:
+			print("Visualization saved to {}".format(destination))
 
 	@staticmethod
 	def progress_bar(percent):
@@ -120,12 +124,13 @@ def main():
 	parser.add_argument("-n", "--nframes", help="the number of frames in the visualization", type=int, required=True)
 	parser.add_argument("-h", "--height", help="the height of each frame, in pixels", type=int, default=FrameVis.default_frame_height)
 	parser.add_argument("-w", "--width", help="the output width of each frame, in pixels", type=int, default=FrameVis.default_frame_width)
+	parser.add_argument("-q", "--quiet", help="mute console outputs", action='store_true', default=False)
 	parser.add_argument("--help", action="help", help="show this help message and exit")
 
 	args = parser.parse_args()
 
 	fv = FrameVis()
-	fv.visualize(args.source, args.destination, args.nframes, height=args.height, width=args.width)
+	fv.visualize(args.source, args.destination, args.nframes, height=args.height, width=args.width, quiet=args.quiet)
 
 
 if __name__ == "__main__":
