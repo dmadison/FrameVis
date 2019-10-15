@@ -170,6 +170,8 @@ class FrameVis:
 			if not quiet:
 				progress_bar(finished_frames / nframes)  # print progress bar to the console
 
+		video.release()  # close video capture
+
 		return output_image
 
 	@staticmethod
@@ -191,6 +193,8 @@ class FrameVis:
 		frame_count = video.get(cv2.CAP_PROP_FRAME_COUNT)  # total number of frames
 		fps = video.get(cv2.CAP_PROP_FPS)  # framerate of the video
 		duration = frame_count / fps  # duration of the video, in seconds
+
+		video.release()  # close video capture
 
 		return int(round(duration / interval))  # number of frames per interval
 
@@ -315,7 +319,7 @@ class MatteTrimmer:
 			frame_bounds = MatteTrimmer.determine_image_bounds(image)
 			image_bounds = frame_bounds if image_bounds is None else MatteTrimmer.find_larger_bound(image_bounds, frame_bounds)
 
-		video.release()
+		video.release()  # close video capture
 
 		return image_bounds
 
