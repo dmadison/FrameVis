@@ -175,6 +175,35 @@ class FrameVis:
 		return output_image
 
 	@staticmethod
+	def average_image(image, direction):
+		"""
+		Averages the colors in an axis across an entire image
+
+		Parameters:
+			image (arr x.y.c): image as 3-dimensional numpy array
+			direction (str): direction to average frames ("horizontal" or "vertical")
+
+		Returns:
+			image, with pixel data averaged along provided axis
+		"""
+
+		height, width, depth = image.shape
+
+		if direction == "horizontal":
+			scale_height = 1
+			scale_width = width
+		elif direction == "vertical":
+			scale_height = height
+			scale_width = 1
+		else:
+			raise ValueError("Invalid direction specified")
+
+		image = cv2.resize(image, (scale_width, scale_height))  # scale down to '1', averaging values
+		image = cv2.resize(image, (width, height))  # scale back up to size
+
+		return image
+
+	@staticmethod
 	def nframes_from_interval(source, interval):
 		"""
 		Calculates the number of frames available in a video file for a given capture interval
@@ -359,6 +388,7 @@ def main():
 	parser.add_argument("-d", "--direction", help="direction to concatenate frames, horizontal or vertical", type=str, \
 		choices=["horizontal", "vertical"],	default=FrameVis.default_direction)
 	parser.add_argument("-t", "--trim", help="detect and trim any hard matting (letterboxing or pillarboxing)", action='store_true', default=False)
+	parser.add_argument("-a", "--average", help="average colors for each frame", action='store_true', default=False)
 	parser.add_argument("-q", "--quiet", help="mute console outputs", action='store_true', default=False)
 	parser.add_argument("--help", action="help", help="show this help message and exit")
 
@@ -374,6 +404,10 @@ def main():
 
 	output_image = fv.visualize(args.source, args.nframes, height=args.height, width=args.width, \
 		direction=args.direction, trim=args.trim, quiet=args.quiet)
+
+	if args.average == True:
+		output_image = fv.average_image(output_image, args.direction)
+	
 	cv2.imwrite(args.destination, output_image)  # save visualization to file
 
 	if not args.quiet:
