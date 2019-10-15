@@ -132,7 +132,7 @@ class FrameVis:
 			next_keyframe += keyframe_interval  # set next frame capture time, maintaining floats
 
 			if not quiet:
-				FrameVis.progress_bar(finished_frames / nframes)  # print progress bar to the console
+				progress_bar(finished_frames / nframes)  # print progress bar to the console
 
 		return output_image
 
@@ -158,14 +158,14 @@ class FrameVis:
 
 		return int(round(duration / interval))  # number of frames per interval
 
-	@staticmethod
-	def progress_bar(percent):
-		"""Prints a progress bar to the console based on the input percentage (float)."""
-		term_char = '\r' if percent < 1.0 else '\n'  # rewrite the line unless finished
-		bar_length = 25  # size of the progress bar, in characters
-		filled_size = int(round(bar_length * percent))  # number of 'filled' characters in the bar
-		progress_string = "#" * filled_size + " " * (bar_length - filled_size)  # assembled progress bar, as a string
-		print("Processing:\t[{0}]\t{1:.2%}".format(progress_string, percent), end=term_char, flush=True)
+
+def progress_bar(percent):
+	"""Prints a progress bar to the console based on the input percentage (float)."""
+	term_char = '\r' if percent < 1.0 else '\n'  # rewrite the line unless finished
+	bar_length = 25  # size of the progress bar, in characters
+	filled_size = int(round(bar_length * percent))  # number of 'filled' characters in the bar
+	progress_string = "#" * filled_size + " " * (bar_length - filled_size)  # assembled progress bar, as a string
+	print("Processing:\t[{0}]\t{1:.2%}".format(progress_string, percent), end=term_char, flush=True)
 
 
 def main():
