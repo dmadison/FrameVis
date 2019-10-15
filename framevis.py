@@ -27,6 +27,7 @@ import cv2
 import numpy as np
 import argparse
 from enum import Enum, auto
+import time
 
 
 class FrameVis:
@@ -142,6 +143,7 @@ class FrameVis:
 		next_keyframe = keyframe_interval / 2  # frame number for the next frame grab, starting evenly offset from start/end
 		finished_frames = 0  # counter for number of processed frames
 		output_image = None
+		progress = ProgressBar("Processing:")
 
 		while True:
 			if finished_frames == nframes:
@@ -168,7 +170,7 @@ class FrameVis:
 			next_keyframe += keyframe_interval  # set next frame capture time, maintaining floats
 
 			if not quiet:
-				progress_bar(finished_frames / nframes)  # print progress bar to the console
+				progress.write(finished_frames / nframes)  # print progress bar to the console
 
 		video.release()  # close video capture
 
@@ -366,14 +368,45 @@ class MatteTrimmer:
 		"""
 		return image[bounds[0][1]:bounds[1][1], bounds[0][0]:bounds[1][0]]
 
+class ProgressBar:
+	"""
+	Generates a progress bar for the console output
 
-def progress_bar(percent):
-	"""Prints a progress bar to the console based on the input percentage (float)."""
-	term_char = '\r' if percent < 1.0 else '\n'  # rewrite the line unless finished
-	bar_length = 25  # size of the progress bar, in characters
-	filled_size = int(round(bar_length * percent))  # number of 'filled' characters in the bar
-	progress_string = "#" * filled_size + " " * (bar_length - filled_size)  # assembled progress bar, as a string
-	print("Processing:\t[{0}]\t{1:.2%}".format(progress_string, percent), end=term_char, flush=True)
+	Args:
+		pre (str): string to prepend before the progress bar
+		bar_length (int): length of the progress bar itself, in characters
+		print_elapsed (bool): option to print time elapsed or not
+
+	Attributes:
+		pre (str): string to prepend before the progress bar
+		bar_length (int): length of the progress bar itself, in characters
+		print_time (bool): option to print time elapsed or not
+		print_elapsed (int): starting time for the progress bar, in unix seconds
+
+	"""
+
+	def __init__(self, pre="", bar_length=25, print_elapsed=True):
+		pre = (pre + '\t') if pre != "" else pre  # append separator if string present
+		self.pre = pre
+		self.bar_length = bar_length
+		self.print_elapsed = print_elapsed
+		if self.print_elapsed:
+			self.__start_time = time.time()  # store start time as unix
+
+	def write(self, percent):
+		"""Prints a progress bar to the console based on the input percentage (float)."""
+		term_char = '\r' if percent < 1.0 else '\n'  # rewrite the line unless finished
+
+		filled_size = int(round(self.bar_length * percent))  # number of 'filled' characters in the bar
+		progress_bar = "#" * filled_size + " " * (self.bar_length - filled_size)  # progress bar characters, as a string
+
+		time_string = ""
+		if self.print_elapsed:
+			time_elapsed = time.time() - self.__start_time
+			time_string = "\tTime Elapsed: {}".format(time.strftime("%H:%M:%S", time.gmtime(time_elapsed)))
+
+		print("{}[{}]\t{:.2%}{}".format(self.pre, progress_bar, percent, time_string), end=term_char, flush=True)
+		
 
 
 def main():
