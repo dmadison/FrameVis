@@ -60,6 +60,9 @@ class FrameVis:
 		video = cv2.VideoCapture(source)  # open video file
 		if not video.isOpened():
 			raise FileNotFoundError("Source Video Not Found")
+
+		if not quiet:
+			print("")  # create space from script call line
 		
 		# calculate keyframe interval
 		video_total_frames = video.get(cv2.CAP_PROP_FRAME_COUNT)  # retrieve total frame count from metadata
@@ -137,7 +140,7 @@ class FrameVis:
 			raise ValueError("Invalid direction specified")
 
 		if not quiet:
-			print("\nVisualizing \"{}\" - {} by {}, from {} frames".format(source, output_width, output_height, nframes))
+			print("Visualizing \"{}\" - {} by {}, from {} frames".format(source, output_width, output_height, nframes))
 
 		# set up for the frame processing loop
 		next_keyframe = keyframe_interval / 2  # frame number for the next frame grab, starting evenly offset from start/end
