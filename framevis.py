@@ -209,6 +209,34 @@ class FrameVis:
 		return image
 
 	@staticmethod
+	def motion_blur(image, direction, blur_amount):
+		"""
+		Blurs the pixels in a given axis across an entire image.
+
+		Parameters:
+			image (arr x.y.c): image as 3-dimensional numpy array
+			direction (str): direction of stacked images for blurring ("horizontal" or "vertical")
+			blur_amount (int): how much to blur the image, as the convolution kernel size
+
+		Returns:
+			image, with pixel data blurred along provided axis
+		"""
+		
+		kernel = np.zeros((blur_amount, blur_amount))  # create convolution kernel
+
+		# fill group with '1's
+		if direction == "horizontal":
+			kernel[:, int((blur_amount - 1)/2)] = np.ones(blur_amount)  # fill center column (blurring vertically for horizontal concat)
+		elif direction == "vertical":
+			kernel[int((blur_amount - 1)/2), :] = np.ones(blur_amount)  # fill center row (blurring horizontally for vertical concat)
+		else:
+			raise ValueError("Invalid direction specified")
+
+		kernel /= blur_amount  # normalize kernel matrix
+
+		return cv2.filter2D(image, -1, kernel)  # filter using kernel with same depth as source
+
+	@staticmethod
 	def nframes_from_interval(source, interval):
 		"""
 		Calculates the number of frames available in a video file for a given capture interval
@@ -425,24 +453,33 @@ def main():
 		choices=["horizontal", "vertical"],	default=FrameVis.default_direction)
 	parser.add_argument("-t", "--trim", help="detect and trim any hard matting (letterboxing or pillarboxing)", action='store_true', default=False)
 	parser.add_argument("-a", "--average", help="average colors for each frame", action='store_true', default=False)
+	parser.add_argument("-b", "--blur", help="apply motion blur to the frames (kernel size)", type=int, nargs='?', const=100, default=0)
 	parser.add_argument("-q", "--quiet", help="mute console outputs", action='store_true', default=False)
 	parser.add_argument("--help", action="help", help="show this help message and exit")
 
 	args = parser.parse_args()
 
+	# check number of frames arguments
 	if args.nframes is None:
 		if args.interval is not None:  # calculate nframes from interval
 			args.nframes = FrameVis.nframes_from_interval(args.source, args.interval)
 		else:
 			parser.error("You must provide either an --(n)frames or --(i)nterval argument")
 
+	# check postprocessing arguments
+	if args.average is True and args.blur != 0:
+		parser.error("Cannot (a)verage and (b)lur, you must choose one or the other")
+
 	fv = FrameVis()
 
 	output_image = fv.visualize(args.source, args.nframes, height=args.height, width=args.width, \
 		direction=args.direction, trim=args.trim, quiet=args.quiet)
 
+	# postprocess
 	if args.average == True:
 		output_image = fv.average_image(output_image, args.direction)
+	elif args.blur != 0:
+		output_image = fv.motion_blur(output_image, args.direction, args.blur)
 	
 	cv2.imwrite(args.destination, output_image)  # save visualization to file
 
