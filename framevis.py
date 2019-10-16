@@ -476,10 +476,19 @@ def main():
 		direction=args.direction, trim=args.trim, quiet=args.quiet)
 
 	# postprocess
-	if args.average == True:
-		output_image = fv.average_image(output_image, args.direction)
-	elif args.blur != 0:
-		output_image = fv.motion_blur(output_image, args.direction, args.blur)
+	if args.average or args.blur != 0:
+		if args.average:
+			if not args.quiet:
+				print("Averaging frame colors... ", end="", flush=True)
+			output_image = fv.average_image(output_image, args.direction)
+		
+		if args.blur != 0:
+			if not args.quiet:
+				print("Adding motion blur to final frame... ", end="", flush=True)
+			output_image = fv.motion_blur(output_image, args.direction, args.blur)
+
+		if not args.quiet:
+			print("done")
 	
 	cv2.imwrite(args.destination, output_image)  # save visualization to file
 
