@@ -441,7 +441,7 @@ class ProgressBar:
 
 
 def main():
-	parser = argparse.ArgumentParser(add_help=False)  # removing help so I can use '-h' for height
+	parser = argparse.ArgumentParser(description="video frame visualizer and movie barcode generator", add_help=False)  # removing help so I can use '-h' for height
 
 	parser.add_argument("source", help="file path for the video file to be visualized", type=str)
 	parser.add_argument("destination", help="file path output for the final image", type=str)
