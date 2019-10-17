@@ -338,12 +338,12 @@ class MatteTrimmer:
 
 		# check for letterboxing
 		horizontal_sums = np.sum(image, axis=(1,2))  # sum all color channels across all rows
-		threshold = (width * 3)  # must be below every pixel having a value of 1/255 in every channel
+		threshold = (width * depth)  # must be below every pixel having a value of 1/255 in every channel
 		vertical_edges = MatteTrimmer.find_matrix_edges(horizontal_sums, threshold)
 
 		# check for pillarboxing
 		vertical_sums = np.sum(image, axis=(0,2))  # sum all color channels across all columns
-		threshold = (height * 3)  # must be below every pixel having a value of 1/255 in every channel
+		threshold = (height * depth)  # must be below every pixel having a value of 1/255 in every channel
 		horizontal_edges = MatteTrimmer.find_matrix_edges(vertical_sums, threshold)
 
 		return np.array([[horizontal_edges[0], vertical_edges[0]], [horizontal_edges[1], vertical_edges[1]]])
