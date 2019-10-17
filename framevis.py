@@ -283,13 +283,16 @@ class MatteTrimmer:
 			raise ValueError("Provided matrix is not the right size (must be 1D)")
 
 		data_start = None
-		data_end = None
+		data_end = matrix.shape[0] - 1  # default to max index
 
 		for value_id, value in enumerate(matrix):
 			if value > threshold:
 				if data_start is None:
 					data_start = value_id
 				data_end = value_id
+
+		if data_start is None:
+			data_start = 0  # if full matrix is below threshold, set to first index
 
 		return (data_start, data_end)
 
