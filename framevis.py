@@ -83,15 +83,17 @@ class FrameVis:
 			if not quiet:
 				print("Trimming enabled, checking matting... ", end="", flush=True)
 
-			cropping_bounds = MatteTrimmer.determine_video_bounds(source, 20)  # 20 frame samples
+			success, cropping_bounds = MatteTrimmer.determine_video_bounds(source, 20)  # 20 frame samples
 
-			crop_width = cropping_bounds[1][0] - cropping_bounds[0][0] + 1
-			crop_height = cropping_bounds[1][1] - cropping_bounds[0][1] + 1
+			matte_type = 0
+			if success:  # only calculate cropping if bounds are valid
+				crop_width = cropping_bounds[1][0] - cropping_bounds[0][0] + 1
+				crop_height = cropping_bounds[1][1] - cropping_bounds[0][1] + 1
 
-			if crop_height != image.shape[0]:  # letterboxing
-				matte_type += 1
-			if crop_width != image.shape[1]:  # pillarboxing
-				matte_type +=2
+				if crop_height != image.shape[0]:  # letterboxing
+					matte_type += 1
+				if crop_width != image.shape[1]:  # pillarboxing
+					matte_type +=2
 			
 			if not quiet:
 				if matte_type == 0:
@@ -318,6 +320,29 @@ class MatteTrimmer:
 		return np.array([[left_edge, top_edge], [right_edge, bottom_edge]])
 
 	@staticmethod
+	def valid_bounds(bounds):
+		"""
+		Checks if the frame bounds are a valid format
+
+		Parameters:
+			bounds (arr, 1.2.2): pair of rectangular coordinates, in the form [(X,Y), (X,Y)]
+
+		Returns:
+			True or False
+		"""
+
+		for x, x_coordinate in enumerate(bounds):
+			for y, y_coordinate in enumerate(bounds):
+				if bounds[x][y] is None:
+					return False  # not a number
+
+		if bounds[0][0] > bounds[1][0]  or \
+			bounds[0][1] > bounds[1][1]:
+			return False  # left > right or top > bottom
+
+		return True
+
+	@staticmethod
 	def determine_image_bounds(image):
 		"""
 		Determines if there are any hard mattes (black bars) surrounding
@@ -327,8 +352,9 @@ class MatteTrimmer:
 			image (arr, x.y.c): image as 3-dimensional numpy array
 
 		Returns:
-			numpy coordinate matrix with the two opposite corners of the 
-			image bounds, in the form [(X,Y), (X,Y)]
+			success (bool): True or False if the bounds are valid
+			image_bounds: numpy coordinate matrix with the two opposite corners of the 
+				image bounds, in the form [(X,Y), (X,Y)]
 		"""
 
 		height, width, depth = image.shape
@@ -343,7 +369,9 @@ class MatteTrimmer:
 		threshold = (height * depth)  # must be below every pixel having a value of 1/255 in every channel
 		horizontal_edges = MatteTrimmer.find_matrix_edges(vertical_sums, threshold)
 
-		return np.array([[horizontal_edges[0], vertical_edges[0]], [horizontal_edges[1], vertical_edges[1]]])
+		image_bounds = np.array([[horizontal_edges[0], vertical_edges[0]], [horizontal_edges[1], vertical_edges[1]]])
+
+		return MatteTrimmer.valid_bounds(image_bounds), image_bounds
 
 	@staticmethod
 	def determine_video_bounds(source, nsamples):
@@ -356,8 +384,9 @@ class MatteTrimmer:
 				evenly spaced throughout the video
 
 		Returns:
-			numpy coordinate matrix with the two opposite corners of the 
-			video bounds, in the form [(X,Y), (X,Y)]
+			success (bool): True or False if the bounds are valid
+			video_bounds: numpy coordinate matrix with the two opposite corners of the 
+				video bounds, in the form [(X,Y), (X,Y)]
 		"""
 		video = cv2.VideoCapture(source)  # open video file
 		if not video.isOpened():
@@ -369,7 +398,7 @@ class MatteTrimmer:
 		keyframe_interval = video_total_frames / nsamples  # calculate number of frames between captures
 
 		next_keyframe = keyframe_interval / 2  # frame number for the next frame grab, starting evenly offset from start/end
-		image_bounds = None
+		video_bounds = None
 
 		for frame_number in range(nsamples):
 			video.set(cv2.CAP_PROP_POS_FRAMES, int(next_keyframe))  # move cursor to next sampled frame
@@ -378,12 +407,16 @@ class MatteTrimmer:
 			if not success:
 				raise IOError("Cannot read from video file")
 			
-			frame_bounds = MatteTrimmer.determine_image_bounds(image)
-			image_bounds = frame_bounds if image_bounds is None else MatteTrimmer.find_larger_bound(image_bounds, frame_bounds)
+			success, frame_bounds = MatteTrimmer.determine_image_bounds(image)
+
+			if not success:
+				continue  # don't compare bounds, frame bounds are invalid
+
+			video_bounds = frame_bounds if video_bounds is None else MatteTrimmer.find_larger_bound(video_bounds, frame_bounds)
 
 		video.release()  # close video capture
 
-		return image_bounds
+		return MatteTrimmer.valid_bounds(video_bounds), video_bounds
 
 	@staticmethod
 	def crop_image(image, bounds):
