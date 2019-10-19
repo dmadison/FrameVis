@@ -2,7 +2,7 @@
 #  Project     FrameVis - Video Frame Visualizer Script
 #  @author     David Madison
 #  @link       github.com/dmadison/FrameVis
-#  @version    v1.0.0
+#  @version    v1.0.1
 #  @license    MIT - Copyright (c) 2019 David Madison
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
