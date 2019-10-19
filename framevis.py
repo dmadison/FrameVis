@@ -143,7 +143,8 @@ class FrameVis:
 			raise ValueError("Invalid direction specified")
 
 		if not quiet:
-			print("Visualizing \"{}\" - {} by {}, from {} frames".format(source, output_width, output_height, nframes))
+			print("Visualizing \"{}\" - {} by {}, from {} frames (every {:.2f} seconds)"\
+				.format(source, output_width, output_height, nframes, FrameVis.interval_from_nframes(source, nframes)))
 
 		# set up for the frame processing loop
 		next_keyframe = keyframe_interval / 2  # frame number for the next frame grab, starting evenly offset from start/end
@@ -262,6 +263,31 @@ class FrameVis:
 		video.release()  # close video capture
 
 		return int(round(duration / interval))  # number of frames per interval
+
+	@staticmethod
+	def interval_from_nframes(source, nframes):
+		"""
+		Calculates the capture interval, in seconds, for a video file given the
+		number of frames to capture
+
+		Parameters:
+			source (str): filepath to source video file
+			nframes (int): number of frames to capture from the video file
+
+		Returns:
+			time interval (seconds) between frame captures (float)
+		"""
+		video = cv2.VideoCapture(source)  # open video file
+		if not video.isOpened():
+			raise FileNotFoundError("Source Video Not Found")
+
+		frame_count = video.get(cv2.CAP_PROP_FRAME_COUNT)  # total number of frames
+		fps = video.get(cv2.CAP_PROP_FPS)  # framerate of the video
+		keyframe_interval = frame_count / nframes  # calculate number of frames between captures
+
+		video.release()  # close video capture
+
+		return keyframe_interval / fps  # seconds between captures
 
 
 class MatteTrimmer:
