@@ -143,8 +143,9 @@ class FrameVis:
 			raise ValueError("Invalid direction specified")
 
 		if not quiet:
-			print("Visualizing \"{}\" - {} by {}, from {} frames (every {:.2f} seconds)"\
-				.format(source, output_width, output_height, nframes, FrameVis.interval_from_nframes(source, nframes)))
+			aspect_ratio = output_width / output_height
+			print("Visualizing \"{}\" - {} by {} ({:.2f}), from {} frames (every {:.2f} seconds)"\
+				.format(source, output_width, output_height, aspect_ratio, nframes, FrameVis.interval_from_nframes(source, nframes)))
 
 		# set up for the frame processing loop
 		next_keyframe = keyframe_interval / 2  # frame number for the next frame grab, starting evenly offset from start/end
