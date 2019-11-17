@@ -440,6 +440,7 @@ class MatteTrimmer:
 				continue  # don't compare bounds, frame bounds are invalid
 
 			video_bounds = frame_bounds if video_bounds is None else MatteTrimmer.find_larger_bound(video_bounds, frame_bounds)
+			next_keyframe += keyframe_interval  # set next frame capture time, maintaining floats
 
 		video.release()  # close video capture
 
