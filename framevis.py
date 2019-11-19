@@ -403,7 +403,7 @@ class MatteTrimmer:
 		return MatteTrimmer.valid_bounds(image_bounds), image_bounds
 
 	@staticmethod
-	def determine_video_bounds(source, nsamples):
+	def determine_video_bounds(source, nsamples, threshold=2):
 		"""
 		Determines if any matting exists in a video source
 
@@ -411,6 +411,7 @@ class MatteTrimmer:
 			source (str): filepath to source video file
 			nsamples (int): number of frames from the video to determine bounds,
 				evenly spaced throughout the video
+			threshold (8-bit int): min color channel value to judge as 'image present'
 
 		Returns:
 			success (bool): True or False if the bounds are valid
@@ -442,7 +443,7 @@ class MatteTrimmer:
 			if not success:
 				raise IOError("Cannot read from video file")
 			
-			success, frame_bounds = MatteTrimmer.determine_image_bounds(image)
+			success, frame_bounds = MatteTrimmer.determine_image_bounds(image, threshold)
 
 			if not success:
 				continue  # don't compare bounds, frame bounds are invalid
