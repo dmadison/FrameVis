@@ -84,7 +84,8 @@ class FrameVis:
 			if not quiet:
 				print("Trimming enabled, checking matting... ", end="", flush=True)
 
-			success, cropping_bounds = MatteTrimmer.determine_video_bounds(source, 10)  # 10 frame samples
+			# 10 frame samples, seen as matted if an axis has all color channels at 2 / 255 or lower (avg)
+			success, cropping_bounds = MatteTrimmer.determine_video_bounds(source, 10, 2)
 
 			matte_type = 0
 			if success:  # only calculate cropping if bounds are valid
@@ -371,7 +372,7 @@ class MatteTrimmer:
 		return True
 
 	@staticmethod
-	def determine_image_bounds(image, threshold=2):
+	def determine_image_bounds(image, threshold):
 		"""
 		Determines if there are any hard mattes (black bars) surrounding
 		an image on either the top (letterboxing) or the sides (pillarboxing)
@@ -403,7 +404,7 @@ class MatteTrimmer:
 		return MatteTrimmer.valid_bounds(image_bounds), image_bounds
 
 	@staticmethod
-	def determine_video_bounds(source, nsamples, threshold=2):
+	def determine_video_bounds(source, nsamples, threshold):
 		"""
 		Determines if any matting exists in a video source
 
