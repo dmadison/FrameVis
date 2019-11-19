@@ -371,7 +371,7 @@ class MatteTrimmer:
 		return True
 
 	@staticmethod
-	def determine_image_bounds(image, threshold=1):
+	def determine_image_bounds(image, threshold=2):
 		"""
 		Determines if there are any hard mattes (black bars) surrounding
 		an image on either the top (letterboxing) or the sides (pillarboxing)
