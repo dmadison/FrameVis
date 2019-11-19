@@ -84,7 +84,8 @@ class FrameVis:
 			if not quiet:
 				print("Trimming enabled, checking matting... ", end="", flush=True)
 
-			success, cropping_bounds = MatteTrimmer.determine_video_bounds(source, 20)  # 20 frame samples
+			# 10 frame samples, seen as matted if an axis has all color channels at 3 / 255 or lower (avg)
+			success, cropping_bounds = MatteTrimmer.determine_video_bounds(source, 10, 3)
 
 			matte_type = 0
 			if success:  # only calculate cropping if bounds are valid
@@ -371,13 +372,14 @@ class MatteTrimmer:
 		return True
 
 	@staticmethod
-	def determine_image_bounds(image):
+	def determine_image_bounds(image, threshold):
 		"""
 		Determines if there are any hard mattes (black bars) surrounding
 		an image on either the top (letterboxing) or the sides (pillarboxing)
 
 		Parameters:
 			image (arr, x.y.c): image as 3-dimensional numpy array
+			threshold (8-bit int): min color channel value to judge as 'image present'
 
 		Returns:
 			success (bool): True or False if the bounds are valid
@@ -389,20 +391,20 @@ class MatteTrimmer:
 
 		# check for letterboxing
 		horizontal_sums = np.sum(image, axis=(1,2))  # sum all color channels across all rows
-		threshold = (width * depth)  # must be below every pixel having a value of 1/255 in every channel
-		vertical_edges = MatteTrimmer.find_matrix_edges(horizontal_sums, threshold)
+		hthreshold = (threshold * width * depth)  # must be below every pixel having a value of "threshold" in every channel
+		vertical_edges = MatteTrimmer.find_matrix_edges(horizontal_sums, hthreshold)
 
 		# check for pillarboxing
 		vertical_sums = np.sum(image, axis=(0,2))  # sum all color channels across all columns
-		threshold = (height * depth)  # must be below every pixel having a value of 1/255 in every channel
-		horizontal_edges = MatteTrimmer.find_matrix_edges(vertical_sums, threshold)
+		vthreshold = (threshold * height * depth)  # must be below every pixel having a value of "threshold" in every channel
+		horizontal_edges = MatteTrimmer.find_matrix_edges(vertical_sums, vthreshold)
 
 		image_bounds = np.array([[horizontal_edges[0], vertical_edges[0]], [horizontal_edges[1], vertical_edges[1]]])
 
 		return MatteTrimmer.valid_bounds(image_bounds), image_bounds
 
 	@staticmethod
-	def determine_video_bounds(source, nsamples):
+	def determine_video_bounds(source, nsamples, threshold):
 		"""
 		Determines if any matting exists in a video source
 
@@ -410,6 +412,7 @@ class MatteTrimmer:
 			source (str): filepath to source video file
 			nsamples (int): number of frames from the video to determine bounds,
 				evenly spaced throughout the video
+			threshold (8-bit int): min color channel value to judge as 'image present'
 
 		Returns:
 			success (bool): True or False if the bounds are valid
@@ -425,6 +428,12 @@ class MatteTrimmer:
 			raise ValueError("Number of samples must be a positive integer")
 		keyframe_interval = video_total_frames / nsamples  # calculate number of frames between captures
 
+		# open video to make results consistent with visualizer
+		# (this also GREATLY increases the read speed? no idea why)
+		success,image = video.read()  # get first frame
+		if not success:
+			raise IOError("Cannot read from video file")
+
 		next_keyframe = keyframe_interval / 2  # frame number for the next frame grab, starting evenly offset from start/end
 		video_bounds = None
 
@@ -435,7 +444,7 @@ class MatteTrimmer:
 			if not success:
 				raise IOError("Cannot read from video file")
 			
-			success, frame_bounds = MatteTrimmer.determine_image_bounds(image)
+			success, frame_bounds = MatteTrimmer.determine_image_bounds(image, threshold)
 
 			if not success:
 				continue  # don't compare bounds, frame bounds are invalid
