@@ -371,13 +371,14 @@ class MatteTrimmer:
 		return True
 
 	@staticmethod
-	def determine_image_bounds(image):
+	def determine_image_bounds(image, threshold=1):
 		"""
 		Determines if there are any hard mattes (black bars) surrounding
 		an image on either the top (letterboxing) or the sides (pillarboxing)
 
 		Parameters:
 			image (arr, x.y.c): image as 3-dimensional numpy array
+			threshold (8-bit int): min color channel value to judge as 'image present'
 
 		Returns:
 			success (bool): True or False if the bounds are valid
@@ -389,13 +390,13 @@ class MatteTrimmer:
 
 		# check for letterboxing
 		horizontal_sums = np.sum(image, axis=(1,2))  # sum all color channels across all rows
-		threshold = (width * depth)  # must be below every pixel having a value of 1/255 in every channel
-		vertical_edges = MatteTrimmer.find_matrix_edges(horizontal_sums, threshold)
+		hthreshold = (threshold * width * depth)  # must be below every pixel having a value of "threshold" in every channel
+		vertical_edges = MatteTrimmer.find_matrix_edges(horizontal_sums, hthreshold)
 
 		# check for pillarboxing
 		vertical_sums = np.sum(image, axis=(0,2))  # sum all color channels across all columns
-		threshold = (height * depth)  # must be below every pixel having a value of 1/255 in every channel
-		horizontal_edges = MatteTrimmer.find_matrix_edges(vertical_sums, threshold)
+		vthreshold = (threshold * height * depth)  # must be below every pixel having a value of "threshold" in every channel
+		horizontal_edges = MatteTrimmer.find_matrix_edges(vertical_sums, vthreshold)
 
 		image_bounds = np.array([[horizontal_edges[0], vertical_edges[0]], [horizontal_edges[1], vertical_edges[1]]])
 
