@@ -84,8 +84,8 @@ class FrameVis:
 			if not quiet:
 				print("Trimming enabled, checking matting... ", end="", flush=True)
 
-			# 10 frame samples, seen as matted if an axis has all color channels at 2 / 255 or lower (avg)
-			success, cropping_bounds = MatteTrimmer.determine_video_bounds(source, 10, 2)
+			# 10 frame samples, seen as matted if an axis has all color channels at 3 / 255 or lower (avg)
+			success, cropping_bounds = MatteTrimmer.determine_video_bounds(source, 10, 3)
 
 			matte_type = 0
 			if success:  # only calculate cropping if bounds are valid
