@@ -426,6 +426,12 @@ class MatteTrimmer:
 			raise ValueError("Number of samples must be a positive integer")
 		keyframe_interval = video_total_frames / nsamples  # calculate number of frames between captures
 
+		# open video to make results consistent with visualizer
+		# (this also GREATLY increases the read speed? no idea why)
+		success,image = video.read()  # get first frame
+		if not success:
+			raise IOError("Cannot read from video file")
+
 		next_keyframe = keyframe_interval / 2  # frame number for the next frame grab, starting evenly offset from start/end
 		video_bounds = None
 
